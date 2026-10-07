@@ -1,0 +1,80 @@
+# AWS EC2 Incident Postmortem — CPU Spike (Simulated)
+
+**Author:** Piyush Awasthi
+**Date:** 10 July 2026
+**Environment:** AWS Free Tier — EC2 (Amazon Linux), Apache (httpd), CloudWatch
+**Severity:** SEV-3 — single instance, lab environment, no customer impact
+**Status:** Resolved
+
+---
+
+## 1. Summary
+
+A CPU exhaustion event was simulated on a single EC2 instance (`web01`) using the `stress` utility to validate CloudWatch's CPU monitoring and alarm configuration. The exercise also surfaced a real gap in the initial alarm configuration — the alarm's evaluation period required 3 consecutive breaching datapoints over 15 minutes, which an intermittent (non-sustained) load did not satisfy even though CPU briefly exceeded the 70% threshold. [CONFIRM: state here whether the final run triggered "In alarm" or whether you adjusted the alarm's datapoints-to-alarm setting to 1-of-1 to validate the mechanism.]
+
+---
+
+## 2. Timeline
+
+| Time (UTC, from CloudWatch graph) | Event |
+|---|---|
+| ~04:00–06:15 | Baseline — instance idle, CPUUtilization near 0.33–0.5% |
+| ~06:30 | First stress run initiated — `stress --cpu 2 --timeout 180` | intermittent spikes observed, peaking at 99.31% |
+| ~06:30–06:45 | CPU zigzags between near-0% and ~99% across multiple short bursts rather than sustaining above threshold |
+| — | Alarm (`web01-high-cpu`, threshold >70% for 3 datapoints/15 min) remains in **OK** state despite individual spikes exceeding 70%, due to the sustained-breach requirement not being met |
+| 07:29 | Second stress run initiated: `stress --cpu 2 --timeout 1200` (PID 37677 parent; PIDs 37678, 37679 workers) |
+| 07:29 | Confirmed via `ps aux | grep stress` — both worker processes at 99.9% CPU |
+| 07:30 | CloudWatch alarm state during this run: in alarm |
+| 07:32 | Time CPU returned to baseline / stress process exited: OK |
+
+---
+
+## 3. Detection
+
+- **What alerted you?** CloudWatch `CPUUtilization` metric, cross-checked manually via the CloudWatch console graph (SNS email notification).
+- **What metric/threshold fired?** Alarm condition: `CPUUtilization > 70 for 3 datapoints within 15 minutes`.
+- **Time to detect:** Visible on the CloudWatch graph within the same 5-minute reporting window as the load, though the alarm itself did not transition to "In alarm" during the first run due to the evaluation-period gap described below.
+
+---
+
+## 4. Investigation
+
+- **Tools/commands used:**
+  - `ps aux | grep stress` — confirmed the `stress` process and its child workers, along with real-time CPU percentage per process
+  - CloudWatch console graph (CPUUtilization, 3h view) — confirmed the metric itself was spiking correctly, up to 99.31%
+  - Manual comparison between the alarm's configured evaluation rule and the observed metric pattern
+
+- **What was ruled out:** The lack of an "In alarm" state was **not** caused by the stress test failing to load the CPU — `ps aux` and the CloudWatch graph both confirmed genuine spikes up to ~99%. It also was not a security group or instance-level issue.
+
+- **Root cause identified:** The alarm's evaluation period (`3 datapoints within 15 minutes`, i.e., CPU must stay above 70% across three consecutive 5-minute samples) was not compatible with a short, intermittent stress run. The load was real and measurable, but not *sustained* long enough in an unbroken window to satisfy the alarm's M-of-N condition. This is a common real-world alarm-tuning pitfall — a metric can clearly breach a threshold without the alarm ever firing, if the evaluation period doesn't match the actual failure pattern being monitored.
+
+---
+
+## 5. Resolution
+
+- **Action taken:** Re-ran the stress test as a longer, continuous load (stress --cpu 2 --timeout 1200) to span multiple full 5-minute evaluation windows without interruption, rather than the shorter 180-second burst used in the first attempt. No changes were made to the alarm's threshold or datapoints-to-alarm configuration — the existing 3-of-3/15-minute rule fired correctly once the load pattern matched it.
+- **Verification:** Confirmed via `ps aux` that both stress worker processes were actively consuming ~99.9% CPU each during the run.
+- **Time to resolve:** 07:30 (alarm triggered) → 07:32 (CPU and alarm both returned to baseline) — approximately 2 minutes from alarm trigger to full recovery.
+---
+
+## 6. Impact
+
+- **Who/what was affected:** Single lab EC2 instance only; no external users or production systems involved.
+- **Duration of degraded state:** Approximately 15–20 minutes across both stress test attempts, as part of an intentional test — not an unplanned outage.
+
+---
+
+## 7. Prevention / Follow-up Actions
+
+- [ ] When configuring CPU alarms going forward, match the "datapoints to alarm" evaluation window to the realistic duration of the failure mode being monitored — a brief spike-and-recover pattern needs a shorter or lower-datapoint-count alarm than a sustained-load scenario.
+- [ ] Add a secondary alarm with a shorter evaluation period (e.g., 1 datapoint over 1 minute) specifically to catch brief spikes, alongside the existing sustained-load alarm — this mirrors how production environments often layer multiple alarms at different sensitivities for the same metric.
+- [ ] Document the distinction between "metric breached threshold" and "alarm fired" for future reference — they are not the same thing, and conflating them is an easy mistake under incident pressure.
+- [ ] Confirm SNS email subscription is actually confirmed/active for future test runs, so alerts arrive in real time rather than requiring manual console checks.
+
+---
+
+## 8. Lessons Learned
+
+This exercise didn't go as initially planned — the first stress run clearly spiked CPU, but the alarm never fired, which actually taught the more valuable lesson. CloudWatch alarms don't trigger on a single breach; they require a sustained pattern matching the configured evaluation period. A monitoring setup that *looks* correct on paper can still miss real spikes if the evaluation window doesn't match the actual failure pattern. This is directly applicable to real cloud support work: tuning alarm sensitivity isn't a one-time setup step, it needs to match the specific type of incident you're trying to catch.
+
+---
