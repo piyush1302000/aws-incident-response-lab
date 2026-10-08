@@ -21,19 +21,19 @@ A hands-on lab that simulates two production-style incidents on AWS, detects the
 
 **EC2 instance running** (t3.micro, public IPv4 assigned, state: Running)
 
-![EC2 instance summary](screenshots/setup-1-ec2-instance.png)
+![EC2 instance summary](screenshots/setup-1-ec2-instance.PNG)
 
 **Web server serving the baseline page**
 
-![Baseline web page](screenshots/setup-2-web-page.png)
+![Baseline web page](screenshots/setup-2-web-page.PNG)
 
 **Apache service healthy** (`active (running)`, listening on port 80)
 
-![systemctl status httpd showing active](screenshots/setup-3-httpd-running.png)
+![systemctl status httpd showing active](screenshots/setup-3-httpd-running.PNG)
 
 **CloudWatch alarms configured and in OK state**
 
-![CloudWatch alarms list](screenshots/setup-4-alarms.png)
+![CloudWatch alarms list](screenshots/setup-4-alarms.PNG)
 
 ---
 
@@ -56,4 +56,4 @@ A hands-on lab that simulates two production-style incidents on AWS, detects the
 
 ## Skills demonstrated
 
-AWS EC2 · Amazon CloudWatch (metrics and alarms) · Linux troubleshooting (`systemctl`, `ps`, `top`) · Apache httpd · SSH · root-cause analysis · incident timelines and postmortem writing# aws-incident-response-lab
+AWS EC2 · Amazon CloudWatch (metrics and alarms) · Linux troubleshooting (`systemctl`, `ps`, `top`) · Apache httpd · SSH · root-cause analysis · incident timelines and postmortem writing
