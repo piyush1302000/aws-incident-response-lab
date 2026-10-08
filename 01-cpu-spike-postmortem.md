@@ -38,9 +38,9 @@ A CPU exhaustion event was simulated on a single EC2 instance (`web01`) using th
 - **What metric/threshold fired?** `CPUUtilization > 70 for 3 datapoints within 15 minutes`.
 - **Time to detect:** About 14 minutes from the start of the sustained load (~07:03) to the alarm (~07:17). This delay is built into the configuration: with default 5-minute metrics, three consecutive breaching datapoints take roughly 15 minutes to accumulate.
 
-![web01-high-cpu alarm in In alarm state](screenshots/cpu-1-alarm-in-alarm.png)
+![web01-high-cpu alarm in In alarm state](screenshots/cpu-1-alarm-in-alarm.PNG)
 
-![CPUUtilization datapoint at 99.996 percent](screenshots/cpu-2-metric-peak.png)
+![CPUUtilization datapoint at 99.996 percent](screenshots/cpu-2-metric-peak.PNG)
 
 ---
 
@@ -51,7 +51,7 @@ A CPU exhaustion event was simulated on a single EC2 instance (`web01`) using th
   - `ps aux | grep stress` — confirmed the `stress` parent process and its worker processes, and later that none were left running
   - `top` — confirmed real-time CPU usage per process
 
-![top output showing two stress workers near 100 percent CPU](screenshots/cpu-4-top-output.png)
+![top output showing two stress workers near 100 percent CPU](screenshots/cpu-4-top-output.PNG)
 
 - **What `top` showed (07:30:08):** two `stress` workers at 99.7% and 99.3% CPU, and overall `%Cpu(s): 100.0 us` with 0.0 idle. That is a fully saturated 2-vCPU instance, so the test genuinely exhausted the CPU. Memory was not under pressure (306 MiB free, no swap used), so the load was purely CPU-bound.
 
@@ -68,7 +68,7 @@ A CPU exhaustion event was simulated on a single EC2 instance (`web01`) using th
 - **Verification:** Confirmed in CloudWatch that the alarm went OK → In alarm → OK, and via `ps aux` that no `stress` process remained at 07:25.
 - **Time to resolve:** Approximately 10 minutes from the alarm firing (~07:17) to it clearing (by 07:27).
 
-![web01-high-cpu alarm back in OK state](screenshots/cpu-3-alarm-recovered.png)
+![web01-high-cpu alarm back in OK state](screenshots/cpu-3-alarm-recovered.PNG)
 
 ---
 
