@@ -4,7 +4,7 @@
 **Date:** 7 October 2026
 **Environment:** AWS Free Tier — EC2 (Amazon Linux), Apache (httpd), CloudWatch
 **Severity:** SEV-3 — single instance, lab environment, no customer impact
-**Status:** Resolved
+**Status:** Resolved.
 
 ---
 
