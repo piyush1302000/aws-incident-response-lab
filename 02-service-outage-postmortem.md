@@ -4,7 +4,7 @@
 **Date:** 7 October 2026
 **Environment:** AWS Free Tier — EC2 (Amazon Linux), Apache (httpd), CloudWatch
 **Severity:** SEV-3 — single instance, lab environment, no customer impact
-**Status:** Resolved.
+**Status:** Resolved
 
 ---
 
@@ -30,14 +30,14 @@ The Apache web service (`httpd`) on `web01` was intentionally stopped to simulat
 
 **Outage start — browser failing to connect:**
 
-![Browser showing ERR_CONNECTION_REFUSED](screenshots/outage-1-connection-refused.png)
+![Browser showing ERR_CONNECTION_REFUSED](screenshots/outage-1-connection-refused.PNG)
 
 ---
 
 ## 3. Detection
 
 - **What alerted you?** A manual browser check. No automated alert fired for this incident.
-- **Did the StatusCheckFailed alarm trigger?** It was not expected to. EC2 status checks test the instance and underlying host, not whether an application is serving traffic, and the instance remained fully reachable over SSH throughout. 
+- **Did the StatusCheckFailed alarm trigger?** It was not expected to. EC2 status checks test the instance and underlying host, not whether an application is serving traffic, and the instance remained fully reachable over SSH throughout. [CONFIRM: check CloudWatch and note here that `web01-status-check-failed` stayed in OK state during the outage.]
 - **Time to detect:** Immediate in this exercise because the outage was deliberate. In a real scenario with only the existing alarms, nothing would have notified anyone — detection would have depended on a user reporting the site down. This is the key monitoring gap the incident exposed.
 
 ---
@@ -51,7 +51,7 @@ The Apache web service (`httpd`) on `web01` was intentionally stopped to simulat
 
 - **Reading the browser error:** `ERR_CONNECTION_REFUSED` (as opposed to a timeout) means the instance was reachable on the network but nothing was listening on port 80. A timeout would have pointed toward a security group or network-filtering problem; a refusal pointed directly at the application layer.
 
-![systemctl status output showing httpd inactive](screenshots/outage-2-systemctl-status.png)
+![systemctl status output showing httpd inactive](screenshots/outage-2-systemctl-status.PNG)
 
 - **What the service status showed:**
   - `Active: inactive (dead)` — Apache was not running
@@ -71,7 +71,7 @@ The Apache web service (`httpd`) on `web01` was intentionally stopped to simulat
 - **Verification:** Browser refresh showed the page loading correctly again (screenshot below, taken 13:10 IST / 07:40 UTC).
 - **Time to resolve:** Roughly 5 minutes from the service stopping (07:35:18) to confirmed restoration (by 07:40). The exact restart time was not captured.
 
-![Browser showing the site restored](screenshots/outage-3-service-restored.png)
+![Browser showing the site restored](screenshots/outage-3-service-restored.PNG)
 
 ---
 
